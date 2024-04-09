@@ -8,7 +8,7 @@
 #include "sys/sysinfo.h"
 
 #define NUM_THREADS 20
-#define CHUNK_SIZE 600
+#define CHUNK_SIZE 6000
 #define TOTAL_SIZE 1000000
 #define LINE_LENGTH 10000
 
@@ -134,16 +134,18 @@ void print_results(int index)
         }
     for (int i = 0; i < upper_bound; i++)
     {
-        printf("%d: %d\n",i + (index * CHUNK_SIZE),max_per_line[i]);
+        
+        printf("%d: %d\n",i + (index * CHUNK_SIZE),max_per_line[i + (index * CHUNK_SIZE)]);
     }
 }
 
 int main(void)
 {
-
+    printf("Starting");
     FILE *fd;
-    fd = fopen("/homes/dan/625/wiki_dump.txt", "r");
-
+    //fd = fopen("/homes/dan/625/wiki_dump.txt", "r");
+    fd = fopen("./test.txt", "r");
+    printf("Made it here");
     int i, rc;
     //int args[2];
     pthread_t threads[NUM_THREADS];
@@ -165,6 +167,7 @@ int main(void)
             if (rc)
             {
                 printf("ERROR; return code from pthread_create() is %d\n", rc);
+                fclose(fd);
                 exit(-1);
             }
         }
@@ -176,6 +179,7 @@ int main(void)
             if (rc)
             {
                 printf("ERROR; return code from pthread_join() is %d\n", rc);
+                fclose(fd);
                 exit(-1);
             }
         }
