@@ -57,8 +57,9 @@ void read_chunck_of_lines( int index, FILE *fd)
 {
     char local_mylines[CHUNK_SIZE][LINE_LENGTH];
     
-    int i,j, upper_bound;
-    int k = 0;
+    int i, upper_bound;
+    //int j;
+    //int k = 0;
     
     for (i = 0; i < CHUNK_SIZE ; i++)
     {
@@ -80,9 +81,9 @@ void read_chunck_of_lines( int index, FILE *fd)
     
 }
 
-void *find_max(void *input) {
+void *find_max(void* input) {
    int index = global_index;
-   int id = (int)input;
+   int id = *((int*)input);
    int i,j, upper_bound;
    int max[CHUNK_SIZE];
 
@@ -144,7 +145,7 @@ int main(void)
     fd = fopen("/homes/dan/625/wiki_dump.txt", "r");
 
     int i, rc;
-    int args[2];
+    //int args[2];
     pthread_t threads[NUM_THREADS];
     pthread_attr_t attr;
     void *status;
@@ -160,7 +161,7 @@ int main(void)
 
         for (i = 0; i < NUM_THREADS; i++)
         {
-            rc = pthread_create(&threads[i], &attr, find_max,(void *)(i));
+            rc = pthread_create(&threads[i], &attr, find_max, (void*)&i);
             if (rc)
             {
                 printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -169,9 +170,9 @@ int main(void)
         }
         /* Free attribute and wait for the other threads */
         pthread_attr_destroy(&attr);
-        for (i = 0; i < NUM_THREADS; i++)
+        for (int j = 0; j < NUM_THREADS; j++)
         {
-            rc = pthread_join(threads[i], &status);
+            rc = pthread_join(threads[j], &status);
             if (rc)
             {
                 printf("ERROR; return code from pthread_join() is %d\n", rc);
@@ -184,7 +185,7 @@ int main(void)
         global_index++;
     }
 
-    for (int i = 0; i < TOTAL_SIZE; i++)
+    for (i = 0; i < TOTAL_SIZE; i++)
     {
         // printf(" %d : %d \n",i, max_per_line[i]);
     }
