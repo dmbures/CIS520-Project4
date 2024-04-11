@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include "sys/types.h"
-#include "sys/sysinfo.h"
+// #include "sys/sysinfo.h"
 
 #define NUM_THREADS 20
 #define CHUNK_SIZE 6000
@@ -53,88 +53,86 @@ void GetProcessMemory(processMem_t* processMem) {
 	fclose(file);
 }
 
-void read_chunck_of_lines( int index, FILE *fd)
+void read_chunk_of_lines(int index, FILE *fd)
 {
     char local_mylines[CHUNK_SIZE][LINE_LENGTH];
     
     int i, upper_bound;
-    //int j;
-    //int k = 0;
     
     for (i = 0; i < CHUNK_SIZE ; i++)
     {
         fgets(local_mylines[i],LINE_LENGTH,fd);
     }
 
-        if(index * CHUNK_SIZE + CHUNK_SIZE  > TOTAL_SIZE)
-        {
-            upper_bound = TOTAL_SIZE - index * CHUNK_SIZE;
-        }
-        else
-        {
-           upper_bound =CHUNK_SIZE;
-        }
-           for (i = 0; i < upper_bound; i++)
-            {
-                memcpy(mylines[i],local_mylines[i],LINE_LENGTH);
-            }  
+    if(index * CHUNK_SIZE + CHUNK_SIZE  > TOTAL_SIZE)
+    {
+        upper_bound = TOTAL_SIZE - index * CHUNK_SIZE;
+    }
+    else
+    {
+        upper_bound =CHUNK_SIZE;
+    }
+
+    for (i = 0; i < upper_bound; i++)
+    {
+        memcpy(mylines[i],local_mylines[i],LINE_LENGTH);
+    }  
     
 }
 
-void *find_max(void* input) {
-   int index = global_index;
-   int id = *((int*)input);
-   int i,j, upper_bound;
-   int max[CHUNK_SIZE];
+void* find_max(void* input) {
+    int index = global_index;
+    int id = *((int*)input);
+    int i,j, upper_bound;
+    int max[CHUNK_SIZE];
 
-        if(index * CHUNK_SIZE + id*(CHUNK_SIZE/NUM_THREADS) + (CHUNK_SIZE/NUM_THREADS)  > TOTAL_SIZE)
+    if(index * CHUNK_SIZE + id*(CHUNK_SIZE/NUM_THREADS) + (CHUNK_SIZE/NUM_THREADS)  > TOTAL_SIZE)
+    {
+        upper_bound = TOTAL_SIZE - (index * CHUNK_SIZE + id*(CHUNK_SIZE/NUM_THREADS));
+    }
+    else
+    {
+        upper_bound = id * CHUNK_SIZE/NUM_THREADS + CHUNK_SIZE/NUM_THREADS ;
+    }
+    
+    for (i = id*(CHUNK_SIZE/NUM_THREADS); i < id*(CHUNK_SIZE/NUM_THREADS) +(CHUNK_SIZE/NUM_THREADS) ; i++)
+    {
+        max[i] = 0;
+        for(j = 0;j < LINE_LENGTH;j++)
         {
-            upper_bound = TOTAL_SIZE - (index * CHUNK_SIZE + id*(CHUNK_SIZE/NUM_THREADS));
+            if((int)(mylines[i][j]) > max[i])
+            {
+                max[i] = (int)(mylines[i][j]);
+            }
         }
-        else
-        {
-           upper_bound = id * CHUNK_SIZE/NUM_THREADS + CHUNK_SIZE/NUM_THREADS ;
-        }
-        
-        for (i = id*(CHUNK_SIZE/NUM_THREADS); i < id*(CHUNK_SIZE/NUM_THREADS) +(CHUNK_SIZE/NUM_THREADS) ; i++)
-        {
-                max[i] = 0;
-                for(j = 0;j < LINE_LENGTH;j++)
-                {
-                    if((int)(mylines[i][j]) > max[i])
-                    {
-                        max[i] = (int)(mylines[i][j]);
-                    }
-                }
-                
-        }
+            
+    }
     
         
     pthread_mutex_lock (&mutexsum);
-            for (i =  id*(CHUNK_SIZE/NUM_THREADS); i < upper_bound; i++)
-            {
-                max_per_line[i] = max[i];
-            }
-     pthread_mutex_unlock (&mutexsum);
+    for (i =  id*(CHUNK_SIZE/NUM_THREADS); i < upper_bound; i++)
+    {
+        max_per_line[i] = max[i];
+    }
+    pthread_mutex_unlock (&mutexsum);
 
-  pthread_exit(NULL);   
-    
+    pthread_exit(NULL);   
+    return NULL;
 }
 
 void print_results(int index)
 {
     int upper_bound;
     if(index * CHUNK_SIZE + CHUNK_SIZE  > TOTAL_SIZE)
-        {
-            upper_bound = TOTAL_SIZE - (index * CHUNK_SIZE);
-        }
-        else
-        {
-           upper_bound = CHUNK_SIZE;
-        }
+    {
+        upper_bound = TOTAL_SIZE - (index * CHUNK_SIZE);
+    }
+    else
+    {
+        upper_bound = CHUNK_SIZE;
+    }
     for (int i = 0; i < upper_bound; i++)
     {
-        
         printf("%d: %d\n",i + (index * CHUNK_SIZE),max_per_line[i + (index * CHUNK_SIZE)]);
     }
 }
@@ -147,7 +145,6 @@ int main(void)
     fd = fopen("./test.txt", "r");
     printf("Made it here");
     int i, rc;
-    //int args[2];
     pthread_t threads[NUM_THREADS];
     pthread_attr_t attr;
     void *status;
@@ -159,7 +156,7 @@ int main(void)
     int index = 0;
     while ((index * CHUNK_SIZE) < TOTAL_SIZE)
     {
-        read_chunck_of_lines(index, fd);
+        read_chunk_of_lines(index, fd);
 
         for (i = 0; i < NUM_THREADS; i++)
         {
@@ -191,7 +188,7 @@ int main(void)
 
     for (i = 0; i < TOTAL_SIZE; i++)
     {
-        // printf(" %d : %d \n",i, max_per_line[i]);
+        printf(" %d : %d \n",i, max_per_line[i]);
     }
     // Print memory ussage
     processMem_t myMem;
