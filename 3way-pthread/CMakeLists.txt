@@ -6,9 +6,9 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wextra -Wshadow -Werror -Wno-sign-compare
 
 # build a dynamic library called libblock_store.so
 # note that the prefix lib will be automatically added in the filename.
-#add_library(pthread ./pthread.c)
+#add_library(pthread ./working_pthread.c)
 
 # make an executable
-add_executable(pthread_test ./pthread.c)
-target_compile_definitions(pthread_test PRIVATE)
-#target_link_libraries(${PROJECT_NAME}_test gtest pthread pthread)
+add_executable(working_pthread_test ./working_pthread.c)
+target_compile_definitions(working_pthread_test PRIVATE)
+#target_link_libraries(${PROJECT_NAME}_test gtest pthread working_pthread)

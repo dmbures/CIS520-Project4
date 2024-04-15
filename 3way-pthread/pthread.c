@@ -38,7 +38,7 @@ int parseLine(char *line) {
 }
 
 void GetProcessMemory(processMem_t* processMem) {
-	FILE *file = fopen("/proc/self/status", "r");
+	FILE *file = fopen("./status", "r");
 	char line[128];
 
 	while (fgets(line, 128, file) != NULL) {
@@ -76,8 +76,7 @@ void read_chunk_of_lines(int index, FILE *fd)
     for (i = 0; i < upper_bound; i++)
     {
         memcpy(mylines[i],local_mylines[i],LINE_LENGTH);
-    }  
-    
+    } 
 }
 
 void* find_max(void* input) {
