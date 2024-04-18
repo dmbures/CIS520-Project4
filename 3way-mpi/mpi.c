@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <mpi.h>
+#include <sys/time.h>
 
 /* Constants */
 #define NUM_ENTRIES 1000000 // Should be 1000000
@@ -25,14 +22,14 @@ void max_substring(void *rank);
 char *strrev(char *str);
 void read_file();
 
-void main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 	struct timeval t1, t2, t3, t4; 
 	double elapsedTime;
-	int numSlots, myVersion = 4; // 1 = base, 2 = openmp, 3 = pthreads, 4 = mpi
+	int myVersion = 4; // 1 = base, 2 = openmp, 3 = pthreads, 4 = mpi
 	
-	int i, rc;
+	int rc;
 	int numtasks, rank;
-	MPI_Status Status;
+	//MPI_Status Status;
 
 
 	rc = MPI_Init(&argc,&argv);
@@ -81,8 +78,8 @@ void main(int argc, char* argv[]) {
 void read_file() {
 	FILE *fp;
 	char str1[LINE_LENGTH];
-	fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
-	// fp = fopen("test.txt", "r");
+	//fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
+	fp = fopen("test.txt", "r");
 
 	/* If the file could not be found, return */
 	if(fp == NULL) {

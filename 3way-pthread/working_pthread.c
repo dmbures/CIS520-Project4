@@ -7,9 +7,9 @@
 #include "sys/types.h"
 // #include "sys/sysinfo.h"
 
-#define NUM_THREADS 4
-#define NUM_LINES 10
-#define LINE_LENGTH 20
+#define NUM_THREADS 5
+#define NUM_LINES 20
+#define LINE_LENGTH 10
 
 char mylines[NUM_LINES][LINE_LENGTH];
 int max_per_line[NUM_LINES];
@@ -70,17 +70,22 @@ void* find_max(void* input){
 }
 
 int main(void){
-
     pthread_t threads[NUM_THREADS];
     pthread_attr_t attr;
     void *status;
     int rc;
 
+    struct timeval t1, t2, t3, t4;
+    double elapsedTime;
+
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+    gettimeofday(&t1, NULL);
     read_file();
+    gettimeofday(&t2, NULL);
 
+    gettimeofday(&t3, NULL);
     for(int i = 0; i < NUM_THREADS; i++){
         rc = pthread_create(&threads[i], &attr, find_max, (void*)&i);
 
@@ -101,10 +106,31 @@ int main(void){
             exit(-1);
         }
     }
+    gettimeofday(&t4, NULL);
+
+    FILE* data;
+    data = fopen("data.txt", "w");
+
+    if(!data){
+        perror("Error opening file\n");
+        exit(-1);
+    }
 
     for(int i = 0; i < NUM_LINES; i++){
-        printf("Line %d: %d\n", i, max_per_line[i]);
+        fprintf(data, "Line %d: %d\n", i, max_per_line[i]);
     }
+    
+    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; //sec to ms
+	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
+	printf("Time to read file: %f\n", elapsedTime);
+    fprintf(data, "Time to read file: %f\n", elapsedTime);
+
+	elapsedTime = (t4.tv_sec - t3.tv_sec) * 1000.0; //sec to ms
+	elapsedTime += (t4.tv_usec - t3.tv_usec) / 1000.0; // us to ms
+	printf("Time to get max ASCII: %f\n", elapsedTime);
+    fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
+
+    fclose(data);
 
     pthread_mutex_destroy(&mutexsum);
 	pthread_exit(NULL);

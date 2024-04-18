@@ -10,7 +10,7 @@
 #define NUM_THREADS 20
 #define CHUNK_SIZE 6000
 #define TOTAL_SIZE 1000000
-#define LINE_LENGTH 10000
+#define LINE_LENGTH 10
 
 pthread_mutex_t mutexsum;
 int global_index = 0;

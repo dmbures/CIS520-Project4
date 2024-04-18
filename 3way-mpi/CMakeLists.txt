@@ -7,7 +7,11 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wextra -Wshadow -Werror -Wno-sign-compare
 # build a dynamic library called libblock_store.so
 # note that the prefix lib will be automatically added in the filename.
 #add_library(pthread ./working_pthread.c)
+find_package(MPI) 
+include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 # make an executable
-add_executable(mpi_test ./pt2.c)
+add_executable(mpi_test ./mpi.c)
 target_compile_definitions(mpi_test PRIVATE)
+target_link_libraries(mpi_test ${MPI_C_LIBRARIES})
+#target_link_libraries(mpi_test gtest mpicc mpi)
