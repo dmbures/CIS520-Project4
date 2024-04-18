@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 	if (rc != MPI_SUCCESS) {
 	  printf ("Error starting MPI program. Terminating.\n");
           MPI_Abort(MPI_COMM_WORLD, rc);
-        }
+	}
 
         MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
         MPI_Comm_rank(MPI_COMM_WORLD,&rank);
