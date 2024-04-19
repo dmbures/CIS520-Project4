@@ -17,7 +17,7 @@ pthread_mutex_t mutexsum;
 
 void read_file(){
     FILE* fp;
-    fp = fopen("../test.txt", "r");
+    fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
 
     if(!fp){
         perror("Error opening file\n");

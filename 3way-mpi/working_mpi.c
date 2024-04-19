@@ -1,135 +1,121 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include <stdint.h>
+#include <mpi.h>
 #include <sys/time.h>
-#include "sys/types.h"
-// #include "sys/sysinfo.h"
 
-#define NUM_THREADS 5
-#define NUM_LINES 20
-#define LINE_LENGTH 10
+/* Constants */
+#define NUM_ENTRIES 1000000 // Should be 1000000
+#define LINE_LENGTH 2003 // Should be 2003
+int NUM_THREADS;
 
-char mylines[NUM_LINES][LINE_LENGTH];
-int max_per_line[NUM_LINES];
-pthread_mutex_t mutexsum;
+/* Global Variables */
+char entries[NUM_ENTRIES][LINE_LENGTH];
 
-void read_file(){
-    FILE* fp;
-    fp = fopen("../test.txt", "r");
+/* Results of the maximum ASCII value */
+int results_array[NUM_ENTRIES];
+int local_results_array[NUM_ENTRIES];
 
-    if(!fp){
-        perror("Error opening file\n");
-        exit(-1);
+/* Function prototypes */
+void max_ascii_value(void *rank);
+void read_file();
+
+int main(int argc, char* argv[]) {
+    struct timeval t1, t2, t3, t4;
+    double elapsedTime;
+    int myVersion = 4; // 1 = base, 2 = openmp, 3 = pthreads, 4 = mpi
+
+    int rc;
+    int numtasks, rank;
+
+    rc = MPI_Init(&argc,&argv);
+    if (rc != MPI_SUCCESS) {
+        printf("Error starting MPI program. Terminating.\n");
+        MPI_Abort(MPI_COMM_WORLD, rc);
     }
 
-    char temp_mylines[NUM_LINES][LINE_LENGTH];
-    int counter = 0;
-    while(counter < NUM_LINES && fgets(temp_mylines[counter],LINE_LENGTH,fp) != NULL){
-        memcpy(mylines[counter],temp_mylines[counter],LINE_LENGTH);
-        counter++;
+    MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    NUM_THREADS = numtasks;
+    printf("size = %d rank = %d\n", numtasks, rank);
+    fflush(stdout);
+
+    gettimeofday(&t1, NULL);
+    if (rank == 0) {
+        /* Read the file into the list of entries */
+        read_file();
+    }
+    gettimeofday(&t2, NULL);
+
+    MPI_Bcast(entries, NUM_ENTRIES * LINE_LENGTH, MPI_CHAR, 0, MPI_COMM_WORLD);
+    gettimeofday(&t3, NULL);
+    /* Get the maximum ASCII value of each line */
+    max_ascii_value(&rank);
+    gettimeofday(&t4, NULL);
+    MPI_Reduce(local_results_array, results_array, NUM_ENTRIES, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+
+    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; //sec to ms
+    elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
+    printf("Time to read file: %f\n", elapsedTime);
+
+    elapsedTime = (t4.tv_sec - t3.tv_sec) * 1000.0; //sec to ms
+    elapsedTime += (t4.tv_usec - t3.tv_usec) / 1000.0; // us to ms
+    printf("Time to get maximum ASCII values: %f\n", elapsedTime);
+
+    printf("DATA, %d, %s, %f\n", myVersion, getenv("SLURM_CPUS_ON_NODE"), elapsedTime);
+
+    MPI_Finalize();
+    return 0;
+}
+
+/* Read the file from wiki_dump.txt into the list of entries */
+void read_file() {
+    FILE *fp;
+    char str1[LINE_LENGTH];
+    fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
+
+    /* If the file could not be found, return */
+    if (fp == NULL) {
+        perror("Failed: ");
+        return;
+    }
+
+    /* Add each line of the file into entries */
+    int i = 0;
+    while (fgets(str1, LINE_LENGTH, fp) != NULL && i < NUM_ENTRIES) {
+        strcpy(entries[i], str1);
+        i++;
     }
 
     fclose(fp);
 }
 
-void* find_max(void* input){
-    int section_num = *((int*)input);    
-    
-    int starting_index = (section_num - 1) * (NUM_LINES / NUM_THREADS);
-    int ending_index = starting_index + (NUM_LINES / NUM_THREADS);
+/* Find and print the maximum ASCII value of each line */
+void max_ascii_value(void *rank) {
+    int myID = *((int *) rank);
 
-    if(ending_index == (NUM_LINES - (NUM_LINES % NUM_THREADS))){
-        ending_index = NUM_LINES;
-    }
+    int startPos = myID * (NUM_ENTRIES / NUM_THREADS);
+    int endPos = startPos + (NUM_ENTRIES / NUM_THREADS);
 
-    int local_max[ending_index - starting_index];
+    char str[LINE_LENGTH];
+    int i, j, max_val;
 
-    pthread_mutex_lock (&mutexsum);
+    for (i = startPos; i < endPos; i++) {
+        strcpy(str, entries[i]);
+        int len = strlen(str);
+        max_val = 0;
 
-    for(int i = starting_index; i < ending_index; i++){
-        int max = mylines[i][0];
-        int j = 0;
-        while(j < LINE_LENGTH && mylines[i][j] != '\0'){
-            if((int)mylines[i][j] > max){
-                max = (int)mylines[i][j];
+        for (j = 0; j < len; j++) {
+            if ((int)str[j] > max_val) {
+                max_val = (int)str[j];
             }
-            local_max[i - starting_index] = max;
-            j++;
         }
+
+        // printf("%d: %d\n", i, max_val); // HERE IT WILL PRINT EVERY SINGLE VALUE
+        // printf("line: %s\n", entries[i]);
+        // printf("Press Enter to continue...");
+        // getchar(); // Wait for user to press Enter
+        local_results_array[i] = max_val;
     }
-    
-    for (int i = 0; i < ending_index - starting_index; i++)
-    {
-        max_per_line[i + starting_index] = local_max[i];
-    }
-    pthread_mutex_unlock (&mutexsum);
-
-    pthread_exit(NULL);
-}
-
-int main(void){
-    pthread_t threads[NUM_THREADS];
-    pthread_attr_t attr;
-    void *status;
-    int rc;
-
-    struct timeval t1, t2, t3, t4;
-    double elapsedTime;
-
-    
-    gettimeofday(&t1, NULL);
-    read_file();
-    gettimeofday(&t2, NULL);
-
-    rc = MPI_Init(&argc,&argv);
-
-    if (rc != MPI_SUCCESS) {
-	    printf ("Error starting MPI program. Terminating.\n");
-        MPI_Abort(MPI_COMM_WORLD, rc);
-	}
-
-    MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-    MPI_Bcast(entries, NUM_ENTRIES * LINE_LENGTH, MPI_CHAR, 0, MPI_COMM_WORLD);
-    for (int j = 0; j < NUM_THREADS; j++)
-    {
-        rc = pthread_join(threads[j], &status);
-        if (rc)
-        {
-            printf("ERROR; return code from pthread_join() is %d\n", rc);
-            exit(-1);
-        }
-    }
-    gettimeofday(&t4, NULL);
-    MPI_Reduce(local_results_array, results_array, NUM_ENTRIES * LINE_LENGTH, MPI_CHAR, MPI_SUM, 0, MPI_COMM_WORLD);
-
-    FILE* data;
-    data = fopen("data.txt", "w");
-
-    if(!data){
-        perror("Error opening file\n");
-        exit(-1);
-    }
-
-    for(int i = 0; i < NUM_LINES; i++){
-        fprintf(data, "Line %d: %d\n", i, max_per_line[i]);
-    }
-    
-    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; //sec to ms
-	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
-	printf("Time to read file: %f\n", elapsedTime);
-    fprintf(data, "Time to read file: %f\n", elapsedTime);
-
-	elapsedTime = (t4.tv_sec - t3.tv_sec) * 1000.0; //sec to ms
-	elapsedTime += (t4.tv_usec - t3.tv_usec) / 1000.0; // us to ms
-	printf("Time to get max ASCII: %f\n", elapsedTime);
-    fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
-
-    fclose(data);
-
-    pthread_mutex_destroy(&mutexsum);
-	pthread_exit(NULL);
 }

@@ -11,7 +11,7 @@ find_package(MPI)
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
 # make an executable
-add_executable(mpi_test ./mpi.c)
+add_executable(mpi_test ./working_mpi.c)
 target_compile_definitions(mpi_test PRIVATE)
 target_link_libraries(mpi_test ${MPI_C_LIBRARIES})
 #target_link_libraries(mpi_test gtest mpicc mpi)
