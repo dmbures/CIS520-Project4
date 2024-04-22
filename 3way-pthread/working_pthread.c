@@ -8,8 +8,8 @@
 // #include "sys/sysinfo.h"
 
 #define NUM_THREADS 5
-#define NUM_LINES 20
-#define LINE_LENGTH 10
+#define NUM_LINES 1000
+#define LINE_LENGTH 1000
 
 char mylines[NUM_LINES][LINE_LENGTH];
 int max_per_line[NUM_LINES];

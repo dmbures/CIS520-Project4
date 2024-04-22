@@ -4,17 +4,14 @@
 #include <mpi.h>
 #include <sys/time.h>
 
-/* Constants */
-#define NUM_ENTRIES 1000000 // Should be 1000000
-#define LINE_LENGTH 2003 // Should be 2003
+#define NUM_LINES 1000
+#define LINE_LENGTH 1000
 int NUM_THREADS;
 
-/* Global Variables */
-char entries[NUM_ENTRIES][LINE_LENGTH];
+char entries[NUM_LINES][LINE_LENGTH];
 
-/* Results of the maximum ASCII value */
-int results_array[NUM_ENTRIES];
-int local_results_array[NUM_ENTRIES];
+int max_per_line[NUM_LINES];
+int local_results_array[NUM_LINES];
 
 /* Function prototypes */
 void max_ascii_value(void *rank);
@@ -27,6 +24,9 @@ int main(int argc, char* argv[]) {
 
     int rc;
     int numtasks, rank;
+
+    FILE* data;
+    data = fopen("data.txt", "w");
 
     rc = MPI_Init(&argc,&argv);
     if (rc != MPI_SUCCESS) {
@@ -48,22 +48,29 @@ int main(int argc, char* argv[]) {
     }
     gettimeofday(&t2, NULL);
 
-    MPI_Bcast(entries, NUM_ENTRIES * LINE_LENGTH, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Bcast(entries, NUM_LINES * LINE_LENGTH, MPI_CHAR, 0, MPI_COMM_WORLD);
     gettimeofday(&t3, NULL);
     /* Get the maximum ASCII value of each line */
     max_ascii_value(&rank);
     gettimeofday(&t4, NULL);
-    MPI_Reduce(local_results_array, results_array, NUM_ENTRIES, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+    MPI_Reduce(local_results_array, max_per_line, NUM_LINES, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
+
+    for(int i = 0; i < NUM_LINES; i++){
+        fprintf(data, "Line %d: %d\n", i, max_per_line[i]);
+    }
 
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; //sec to ms
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
     printf("Time to read file: %f\n", elapsedTime);
+    fprintf(data, "Time to read file: %f\n", elapsedTime);
 
     elapsedTime = (t4.tv_sec - t3.tv_sec) * 1000.0; //sec to ms
     elapsedTime += (t4.tv_usec - t3.tv_usec) / 1000.0; // us to ms
     printf("Time to get maximum ASCII values: %f\n", elapsedTime);
+    fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
 
     printf("DATA, %d, %s, %f\n", myVersion, getenv("SLURM_CPUS_ON_NODE"), elapsedTime);
+    fclose(data);
 
     MPI_Finalize();
     return 0;
@@ -83,7 +90,7 @@ void read_file() {
 
     /* Add each line of the file into entries */
     int i = 0;
-    while (fgets(str1, LINE_LENGTH, fp) != NULL && i < NUM_ENTRIES) {
+    while (fgets(str1, LINE_LENGTH, fp) != NULL && i < NUM_LINES) {
         strcpy(entries[i], str1);
         i++;
     }
@@ -95,8 +102,8 @@ void read_file() {
 void max_ascii_value(void *rank) {
     int myID = *((int *) rank);
 
-    int startPos = myID * (NUM_ENTRIES / NUM_THREADS);
-    int endPos = startPos + (NUM_ENTRIES / NUM_THREADS);
+    int startPos = myID * (NUM_LINES / NUM_THREADS);
+    int endPos = startPos + (NUM_LINES / NUM_THREADS);
 
     char str[LINE_LENGTH];
     int i, j, max_val;
