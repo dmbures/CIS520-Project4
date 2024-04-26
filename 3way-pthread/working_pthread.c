@@ -7,13 +7,13 @@
 #include "sys/types.h"
 // #include "sys/sysinfo.h"
 
-#define NUM_THREADS 5
-#define NUM_LINES 1000
+#define NUM_LINES 5000
 #define LINE_LENGTH 1000
 
 char mylines[NUM_LINES][LINE_LENGTH];
 int max_per_line[NUM_LINES];
 pthread_mutex_t mutexsum;
+int numThreads = 1;
 
 void read_file(){
     FILE* fp;
@@ -37,10 +37,10 @@ void read_file(){
 void* find_max(void* input){
     int section_num = *((int*)input);    
     
-    int starting_index = (section_num - 1) * (NUM_LINES / NUM_THREADS);
-    int ending_index = starting_index + (NUM_LINES / NUM_THREADS);
+    int starting_index = (section_num - 1) * (NUM_LINES / numThreads);
+    int ending_index = starting_index + (NUM_LINES / numThreads);
 
-    if(ending_index == (NUM_LINES - (NUM_LINES % NUM_THREADS))){
+    if(ending_index == (NUM_LINES - (NUM_LINES % numThreads))){
         ending_index = NUM_LINES;
     }
 
@@ -69,8 +69,14 @@ void* find_max(void* input){
     pthread_exit(NULL);
 }
 
-int main(void){
-    pthread_t threads[NUM_THREADS];
+int main(int argc, char *argv[]){
+    if(argc < 3){
+        return EXIT_FAILURE;
+    }
+
+    numThreads = atoi(argv[1]);
+
+    pthread_t threads[numThreads];
     pthread_attr_t attr;
     void *status;
     int rc;
@@ -86,7 +92,7 @@ int main(void){
     gettimeofday(&t2, NULL);
 
     gettimeofday(&t3, NULL);
-    for(int i = 0; i < NUM_THREADS; i++){
+    for(int i = 0; i < numThreads; i++){
         rc = pthread_create(&threads[i], &attr, find_max, (void*)&i);
 
         if (rc)
@@ -97,7 +103,7 @@ int main(void){
     }
 
     pthread_attr_destroy(&attr);
-    for (int j = 0; j < NUM_THREADS; j++)
+    for (int j = 0; j < numThreads; j++)
     {
         rc = pthread_join(threads[j], &status);
         if (rc)
@@ -108,29 +114,38 @@ int main(void){
     }
     gettimeofday(&t4, NULL);
 
-    FILE* data;
-    data = fopen("data.txt", "w");
+    //FILE* data;
+    //data = fopen("data.txt", "w");
 
+    /*
     if(!data){
         perror("Error opening file\n");
         exit(-1);
     }
-
+    */
+    /*
     for(int i = 0; i < NUM_LINES; i++){
         fprintf(data, "Line %d: %d\n", i, max_per_line[i]);
     }
-    
+    */
+    printf("Number of Threads: %d\n", numThreads);
+    printf("Number of Cores: %d\n", atoi(argv[2]));
+
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; //sec to ms
 	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
+    double readFileTime = elapsedTime;
 	printf("Time to read file: %f\n", elapsedTime);
-    fprintf(data, "Time to read file: %f\n", elapsedTime);
+    //fprintf(data, "Time to read file: %f\n", elapsedTime);
 
 	elapsedTime = (t4.tv_sec - t3.tv_sec) * 1000.0; //sec to ms
 	elapsedTime += (t4.tv_usec - t3.tv_usec) / 1000.0; // us to ms
+    double maxASCIITime = elapsedTime;
 	printf("Time to get max ASCII: %f\n", elapsedTime);
-    fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
+    //fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
 
-    fclose(data);
+    //fclose(data);
+
+    printf("DATA: %d, %d, %f, %f", numThreads, atoi(argv[2]), readFileTime, maxASCIITime);
 
     pthread_mutex_destroy(&mutexsum);
 	pthread_exit(NULL);
