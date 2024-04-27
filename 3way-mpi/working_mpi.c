@@ -5,7 +5,7 @@
 #include <sys/time.h>
 
 #define NUM_LINES 1000000
-#define LINE_LENGTH 2000
+#define LINE_LENGTH 1000
 int NUM_THREADS;
 
 char entries[NUM_LINES][LINE_LENGTH];

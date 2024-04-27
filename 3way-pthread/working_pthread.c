@@ -7,7 +7,7 @@
 #include "sys/types.h"
 // #include "sys/sysinfo.h"
 
-#define NUM_LINES 5000
+#define NUM_LINES 1000000
 #define LINE_LENGTH 1000
 
 char mylines[NUM_LINES][LINE_LENGTH];
@@ -33,6 +33,7 @@ void read_file(){
 
     fclose(fp);
 }
+
 
 void* find_max(void* input){
     int section_num = *((int*)input);    
@@ -68,6 +69,8 @@ void* find_max(void* input){
 
     pthread_exit(NULL);
 }
+
+
 
 int main(int argc, char *argv[]){
     if(argc < 3){
