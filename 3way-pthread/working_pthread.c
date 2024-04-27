@@ -114,20 +114,23 @@ int main(int argc, char *argv[]){
     }
     gettimeofday(&t4, NULL);
 
-    //FILE* data;
-    //data = fopen("data.txt", "w");
-
     /*
+    FILE* data;
+    data = fopen("data.txt", "w");
+
+    
     if(!data){
         perror("Error opening file\n");
         exit(-1);
     }
     */
+    
     /*
     for(int i = 0; i < NUM_LINES; i++){
-        fprintf(data, "Line %d: %d\n", i, max_per_line[i]);
+        printf("Line %d: %d\n", i, max_per_line[i]);
     }
     */
+    
     printf("Number of Threads: %d\n", numThreads);
     printf("Number of Cores: %d\n", atoi(argv[2]));
 
@@ -146,7 +149,7 @@ int main(int argc, char *argv[]){
     //fclose(data);
 
     printf("DATA: %d, %d, %f, %f", numThreads, atoi(argv[2]), readFileTime, maxASCIITime);
-
+    
     pthread_mutex_destroy(&mutexsum);
 	pthread_exit(NULL);
 }
