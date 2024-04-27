@@ -4,8 +4,8 @@
 #include <mpi.h>
 #include <sys/time.h>
 
-#define NUM_LINES 1000
-#define LINE_LENGTH 1000
+#define NUM_LINES 1000000
+#define LINE_LENGTH 2000
 int NUM_THREADS;
 
 char entries[NUM_LINES][LINE_LENGTH];
@@ -20,7 +20,7 @@ void read_file();
 int main(int argc, char* argv[]) {
     struct timeval t1, t2, t3, t4;
     double elapsedTime;
-    int myVersion = 4; // 1 = base, 2 = openmp, 3 = pthreads, 4 = mpi
+    //int myVersion = 4; // 1 = base, 2 = openmp, 3 = pthreads, 4 = mpi
 
     int rc;
     int numtasks, rank;
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     NUM_THREADS = numtasks;
-    printf("size = %d rank = %d\n", numtasks, rank);
+    //printf("size = %d rank = %d\n", numtasks, rank);
     fflush(stdout);
 
     gettimeofday(&t1, NULL);
@@ -55,21 +55,26 @@ int main(int argc, char* argv[]) {
     gettimeofday(&t4, NULL);
     MPI_Reduce(local_results_array, max_per_line, NUM_LINES, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
 
+    /*
     for(int i = 0; i < NUM_LINES; i++){
         fprintf(data, "Line %d: %d\n", i, max_per_line[i]);
     }
+    */
 
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0; //sec to ms
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0; // us to ms
+    double readFileTime = elapsedTime;
     printf("Time to read file: %f\n", elapsedTime);
-    fprintf(data, "Time to read file: %f\n", elapsedTime);
+    //fprintf(data, "Time to read file: %f\n", elapsedTime);
 
     elapsedTime = (t4.tv_sec - t3.tv_sec) * 1000.0; //sec to ms
     elapsedTime += (t4.tv_usec - t3.tv_usec) / 1000.0; // us to ms
+    double maxASCIITime = elapsedTime;
     printf("Time to get maximum ASCII values: %f\n", elapsedTime);
-    fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
+    //fprintf(data, "Time to get max ASCII: %f\n", elapsedTime);
 
-    printf("DATA, %d, %s, %f\n", myVersion, getenv("SLURM_CPUS_ON_NODE"), elapsedTime);
+    //printf("DATA, %d, %s, %f\n", myVersion, getenv("SLURM_CPUS_ON_NODE"), elapsedTime);
+    printf("DATA: %s, %f, %f", getenv("SLURM_CPUS_ON_NODE"), readFileTime, maxASCIITime);
     fclose(data);
 
     MPI_Finalize();
